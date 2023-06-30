@@ -1,0 +1,12 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: ezyq-admin
+spec:
+  host: ezyq-admin.apps.ocp4.maybank.com
+  to:
+    kind: Service
+    name: ezyq-frontend
+  port:
+    targetPort: 8080

@@ -1,0 +1,31 @@
+# TODO: Edit this component to register more information about your repository with M-DEVx.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  test: ${"name":"webform test","destination":{"host":"github.com","owner":"TKH-Maybank-Organization","repo":"webform1"}}
+  name: "webform test"
+  links:
+    - url: https://githubbeta.maybank.com
+      title: Github Maybank (Beta)
+      icon: dashboard
+  annotations:
+    # TODO: Github CI/CD, Pull Request, Repository Info etc.
+    github.com/project-slug: TKH-Maybank-Organization/webform test
+#    github.com/project-slug: MY-MAYBANK/webform test
+    # TODO: Add Enterprise sentry project ID
+    sentry.io/project-slug: webform test
+#    sentry.io/project-slug: MY-MAYBANK/webform test
+    # TODO: Kubernetes: https://backstage.io/docs/features/kubernetes/configuration/
+    backstage.io/kubernetes-id: web-form
+    backstage.io/kubernetes-namespace: dev
+    backstage.io/kubernetes-label-selector: 'app=webform test,component=front-end'
+    backstage.io/techdocs-ref: dir:.
+
+spec:
+  type: service
+  owner: group:developer
+  lifecycle: experimental
+  dependsOn:
+    - resource:default/artists-db
+  providesApis:
+    - spotify

@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ezyq-mysql
+  labels:
+    app: ezyq-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ezyq-mysql
+  template:
+    metadata:
+      labels:
+        app: ezyq-mysql
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - worker1.ocp4.maybank.com
+                # - worker2.ocp4.maybank.com
+      containers:
+      - name: ezyq-mysql
+        # image: registry.redhat.io/rhscl/mysql-56-rhel7
+        image: mysql:5.6
+        # docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=yourStrong(!)Password" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "passwordroot123"
+          - name: MYSQL_USER
+            value: "dbadmin"
+          - name: MYSQL_PASSWORD
+            value: "password123"
+          - name: MYSQL_DATABASE
+            value: "testdb"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+          - name: ezyq-mysql-initdb
+            mountPath: /docker-entrypoint-initdb.d
+        # ports:
+        # - containerPort: 1433
+        # https://stackoverflow.com/questions/61771351/kubernetes-not-updates-docker-image-on-redeployment
+        imagePullPolicy: Always #this is neededed to ensure a new image will be pull from registry during the pod restart
+      volumes:
+        - name: ezyq-mysql-initdb
+          configMap:
+            name: ezyq-mysql-initdb-config
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ezyq-mysql-initdb-config
+data:
+  initdb.sql: |
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL,
+      password TEXT NOT NULL
+    );
+    INSERT INTO users (username, password) VALUES
+      ('admin', 'Maybank'),
+      ('test', 'password1'),
+      ('user', 'password');
+
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ezyq-mssql
+  labels:
+    app: ezyq-mssql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ezyq-mssql
+  template:
+    metadata:
+      labels:
+        app: ezyq-mssql
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - worker1.ocp4.maybank.com
+                # - worker2.ocp4.maybank.com
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: ezyq-mssql
+        image: mcr.microsoft.com/mssql/server:2017-CU8-ubuntu
+        ports:
+        - containerPort: 1433
+        env:
+        - name: MSSQL_PID
+          value: "Developer"
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          value: "Sql2017isfast"
+        # https://stackoverflow.com/questions/61771351/kubernetes-not-updates-docker-image-on-redeployment
+        imagePullPolicy: Always #this is neededed to ensure a new image will be pull from registry during the pod restart
+        volumeMounts:
+        - name: ezyq-mssqldb
+          mountPath: /var/opt/mssql
+        - name: ezyq-mysql-initdb
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: ezyq-mssqldb
+        persistentVolumeClaim:
+          claimName: ezyq-mssql-data
+      - name: ezyq-mysql-initdb
+        configMap:
+          name: ezyq-mysql-initdb-config
+# /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P <your_password>
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ezyq-mssql-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ezyq-mysql
+spec:
+  type: ClusterIP
+  selector:
+    app: ezyq-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ezyq-mssql
+spec:
+  type: ClusterIP
+  selector:
+    app: ezyq-mssql
+  ports:
+    - port: 1433
+      targetPort: 1433

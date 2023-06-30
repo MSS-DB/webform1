@@ -1,0 +1,115 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ezyq-backend
+  labels:
+    app: ezyq-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ezyq-backend
+  template:
+    metadata:
+      labels:
+        app: ezyq-backend
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - worker1.ocp4.maybank.com
+                # - worker2.ocp4.maybank.com
+      imagePullSecrets:
+      - name: regcred2
+      containers:
+      - name: ezyq-backend
+        image: ghcr.io/tkhenghong/ezyq-admin:ezyq-backend-v1.0.4
+        env:
+          - name: DB_HOST
+            value: "ezyq-mssql"
+          - name: DB_NAME
+            value: "ezq"
+          - name: DB_USER
+            value: "sa"
+          - name: MSSQL_SA_PASSWORD
+            value: "Sql2017isfast"
+        ports:
+        - containerPort: 8000
+        # https://stackoverflow.com/questions/61771351/kubernetes-not-updates-docker-image-on-redeployment
+        imagePullPolicy: Always #this is neededed to ensure a new image will be pull from registry during the pod restart
+        
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ezyq-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: ezyq-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ezyq-frontend
+  labels:
+    app: ezyq-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ezyq-frontend
+  template:
+    metadata:
+      labels:
+        app: ezyq-frontend
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - worker1.ocp4.maybank.com
+                # - worker2.ocp4.maybank.com
+      imagePullSecrets:
+      - name: regcred2
+      containers:
+      - name: ezyq-frontend
+        image: ghcr.io/tkhenghong/ezyq-admin:ezyq-frontend-v1.0.4
+        ports:
+        - containerPort: 80
+        # https://stackoverflow.com/questions/61771351/kubernetes-not-updates-docker-image-on-redeployment
+        imagePullPolicy: Always #this is neededed to ensure a new image will be pull from registry during the pod restart
+        
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ezyq-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: ezyq-frontend
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+        
