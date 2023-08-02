@@ -3,7 +3,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   test: ${"name":"webform test","destination":{"host":"github.com","owner":"TKH-Maybank-Organization","repo":"webform1"}}
-  name: "webform test"
+  name: "webform1"
   links:
     - url: https://githubbeta.maybank.com
       title: Github Maybank (Beta)
